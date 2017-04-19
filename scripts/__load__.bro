@@ -1,56 +1,55 @@
 module Phish ; 
 
-#redef exit_only_after_terminate = T; 
-
-export {
-
-	global log_stats: event(); 
-	
-	global log_reporter: function (msg: string, debug: count); 
-
-	redef Site::local_nets += { 128.3.0.0/16, 131.243.0.0/16, }; 
-} 
-
-
-function  log_reporter(msg: string, debug: count)
-{
-        #if (debug > 0 ) {
-                #event reporter_info(network_time(), msg, peer_description);
-        #}
-
-        local DEBUG = 0 ;
-
-if (DEBUG == 0) {
-		@if ( ! Cluster::is_enabled())
-			print fmt("%s", msg);
-		@endif 
-		event reporter_info(network_time(), msg, peer_description);
-
-		}
-}
+redef exit_only_after_terminate = T; 
+redef table_expire_interval = 1 secs ;
+redef table_incremental_step=20000 ; 
 
 @load ./base-vars.bro 
-@load ./smtp-write-sqlite.bro
-@load ./smtp-read-sqlite.bro
+
+@load ./smtp-write-http_fqdn-postgres.bro
+@load ./smtp-read-http_fqdn-postgres.bro
+
+@load ./smtp-write-mail-links-postgres.bro 
+@load ./smtp-read-mail-links-postgres.bro
+
+
+@load ./smtp-postgres-smtp_from.bro 
+@load ./smtp-postgres-smtp_from_name.bro 
+@load ./smtp-postgres-smtp_from_email.bro 
+
+#@load ./smtp-write-http_fqdn-sqlite.bro
+#@load ./smtp-read-http_fqdn-sqlite.bro
+#@load ./smtp-write-mail-links-sqlite.bro 
+#@load ./smtp-read-mail-links-sqlite.bro
+
+#@load ./smtp-mail-links-flatfile.bro 
+#@load ./ff.bro 
 
 @load ./log-smtp-urls.bro 
+@load ./log-clicked-urls.bro
 
 @load ./smtp-sensitive-uris.bro                 
 @load ./smtp-malicious-indicators.bro 
 
-@load ./main-logic.bro 
-
 @load ./rare-action-urls.bro                    
 @load ./rare-action-email.bro
+
+@load ./distribute-smtp-urls-workers.bro
 @load ./smtp-url-clicks.bro
+
+@load ./main-logic.bro 
 
 @load ./http-sensitive_POSTs.bro
 @load ./smtp-file-download.bro
 
+@load ./smtp-postgres-addressbook.bro
+@load ./smtp-addressbook.bro 
+
 @load ./configure-variables-in-this-file.bro    
+@load ./bro-done.bro 
 @load ./smtp-analysis-notice-policy.bro
 
-@load ./bro-done.bro 
+
 
 
 #@load ./smtp-urls-log.bro 

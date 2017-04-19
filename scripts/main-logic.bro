@@ -13,6 +13,8 @@ export {
 
 function isRareURLClick(domain: string): bool 
 {
+	log_reporter(fmt("EVENT: function isRareURLClick VARS: domain: %s", domain),10); 
+
 
        # the paper the definition we used:
         # If a domain has been seen fewer than 3 times in previous
@@ -35,10 +37,16 @@ function isRareURLClick(domain: string): bool
 function isHistoricallyNewAttacker(domain: string, from_name: string, from_address: string): bool 
 {	
 
+	log_reporter(fmt("EVENT: function isHistoricallyNewAttacker VARS: domain: %s, from_name: %s, from_address: %s", domain, from_name, from_address),10); 
 # - *Historically New Attacker*
 #	generate alert for historically new attacker
 #      - if (RareURLClick && *from_name:days_sent <= 2* && *from_email_addr:days_sent  <= 2*)
 
+	if (from_name !in smtp_from_name)
+	{ 
+		log_reporter(fmt("MYERROR 42  - from_name not in smtp_from_name: %s", from_name),0);
+		#return F ; 
+	} 
 	if (isRareURLClick(domain) && |smtp_from_name[from_name]$days_sent| <= 2 && |smtp_from_email[from_address]$days_sent| <= 2) 
 	{ 
 		return T ; 
@@ -53,6 +61,7 @@ function isHistoricallyNewAttacker(domain: string, from_name: string, from_addre
 
 function isSpoofworthyFromName(from_name: string ): bool 
 {
+	log_reporter(fmt("EVENT: function isSpoofworthyFromName VARS: from_name: %s", from_name),10); 
 
 #	- SpoofworthyFromName is a boolean OR-clause where:
 #         (from_name:days_sent >= 14 || from_name:num_clicks > 1 || from_name:emails_recv > 1)
@@ -70,6 +79,7 @@ function isSpoofworthyFromName(from_name: string ): bool
 
 function isNameSpoofer(domain: string, from_name: string,  full_from: string): bool 
 {
+	log_reporter(fmt("EVENT: function isNameSpoofer VARS: domain: %s, from_name: %s, full_from: %s", domain, from_name, full_from),10); 
 
 # *Name spoofer* 
 #	- generate alert for rare name spoofer
@@ -88,6 +98,7 @@ function isNameSpoofer(domain: string, from_name: string,  full_from: string): b
 
 function isSpoofworthyFromAddress(from_address: string): bool
 {
+	log_reporter(fmt("EVENT: function isSpoofworthyFromAddress VARS: from_address: %s", from_address),10); 
 
 #         - To compute mail_from:days_sent, we can simply take the MAILFROM
 #         header in the current alert's email and look up its value in the mail_from table
@@ -111,6 +122,8 @@ function isSpoofworthyFromAddress(from_address: string): bool
 
 function isAddressSpoofer(domain: string, from_address: string, full_from: string ): bool 
 { 
+	
+	log_reporter(fmt("EVENT: function isAddressSpoofer VARS: domain: %s, from_address: %s, full_from: %s", domain, from_address, full_from),10); 
 # *Address spoofer*
 # 	generate alert for rare address spoofer
 #   	- if (RareURLClick && *SpoofworthyFromAddress* && *mail_from:days_sent <= 1*)
@@ -121,6 +134,89 @@ function isAddressSpoofer(domain: string, from_address: string, full_from: strin
 	return F; 
 }
 
+
+##############################
+
+
+### this also only runs on manager
+@if (( Cluster::is_enabled() && Cluster::local_node_type() == Cluster::MANAGER )|| ! Cluster::is_enabled() )
+function Phish::run_heuristics(link: string, mail_info: mi, c: connection)
+{
+
+	log_reporter(fmt("EVENT: function Phish::run_heuristics: VARS: link: %s, mail_info: %s", link, mail_info),10); 
+
+       	log_reporter(fmt("clicked_URL : conn: %s, link: %s, mail_info: %s, smtp_from: %s", c$id, link, mail_info, smtp_from[mail_info$from]),0);
+        log_clicked_urls(link, mail_info, c);
+
+        local _msg = "" ;
+
+        local domain = extract_host(link);
+
+        local from_name = get_email_name(mail_info$from) ;
+        local from_address = get_email_address(mail_info$from) ;
+        local full_from=mail_info$from ;
+
+
+	######### 
+	#### at moment if its an expired URL there is 
+	# a possibilitythat from_name, from_address and full_from
+	# might not be in the tables because: expired or bro restart 
+	# need to think about storing and reading those. 
+	####### 
+
+        ### to update the number of clicks seen by a perticular
+        ### from_name and a from_address
+
+	local sr: smtp_rec ;
+       	sr$ts = mail_info$ts ;
+	sr$from = mail_info$from ;
+
+        if (from_name != "") 
+		if (from_name !in smtp_from_name)
+		{ 
+			add_to_from_name(sr); 	
+			smtp_from_name[from_name]$num_clicks+=1;
+		} 
+
+	if (from_address !in smtp_from_email)
+	{
+		add_to_from_email(sr); 
+	}
+	smtp_from_email[from_address]$num_clicks +=1 ;
+
+	if (full_from !in smtp_from) 
+	{
+		add_to_from(sr); 
+	}
+	smtp_from[full_from]$num_clicks+= 1;
+
+        if (isRareURLClick(domain) )
+        {
+                _msg = fmt("Rare clicked_URL: link: %s, mail_info: %s, http_fqdn: %s", link, mail_info, http_fqdn[domain]);
+                log_reporter(fmt ("%s",_msg),0);
+                NOTICE([$note=Phish::RareURLClick, $msg=_msg, $conn=c]);
+
+                if (isHistoricallyNewAttacker(domain, from_name, from_address) )
+                {
+                        NOTICE([$note=Phish::HistoricallyNewAttacker, $msg=_msg, $conn=c]);
+                }
+
+                if (isNameSpoofer(domain, from_name, full_from) )
+                {
+                        NOTICE([$note=Phish::NameSpoofer, $msg=_msg, $conn=c]);
+
+                }
+
+                if (isAddressSpoofer(domain, from_address, full_from) )
+                {
+                        NOTICE([$note=Phish::AddressSpoofer, $msg=_msg, $conn=c]);
+                }
+
+        }
+}
+@endif
+ 
+###############
 
 ##### relevant data structures  ########
 # http_fqdn: 

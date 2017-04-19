@@ -74,8 +74,12 @@ hook Notice::policy(n: Notice::Info)
 
 } ##### end of export 
 
-event Input::update_finished(name: string, source: string)                                                         
+#event Input::update_finished(name: string, source: string)                                                         
+event Input::end_of_data(name: string, source: string)                                                         
 {                                                                         
+
+	log_reporter(fmt("EVENT: Input::update_finished: VARS: name: %s, source: %s", name, source),10);
+
         #print fmt("digested  %s records in smtp_malicious_indicators", |smtp_malicious_indicators|);
         #####print smtp_malicious_indicators;                                                 
 } 
@@ -87,6 +91,8 @@ event bro_init() &priority=10
 
 event SMTP::log_smtp (rec: SMTP::Info)
 { 
+
+	log_reporter(fmt("EVENT: SMTP::log_smtp: VARS: rec: %s", rec),10); 
 
 	if ( ! connection_exists(rec$id) )
                 return;
@@ -172,10 +178,3 @@ event SMTP::log_smtp (rec: SMTP::Info)
 
 }  ##### end of policy 
 
-
-#event bro_done()
-#{
-#	for (a in smtp_malicious_indicators)
-# 		print fmt ("%s", a ); 
-#	
-#}

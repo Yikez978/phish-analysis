@@ -28,7 +28,7 @@ export {
 		
 		global suspicious_text_in_url : pattern &redef ;
 
-		global get_domain_from_url : function (url: string): string ; 
+
 } 
 
 hook Notice::policy(n: Notice::Info)
@@ -39,21 +39,10 @@ hook Notice::policy(n: Notice::Info)
   #      }
 }
 
-function get_domain_from_url(url: string): string 
-{
-
-	local dd = find_all(url,/\/\/([a-z0-9A-Z]+(:[a-zA-Z0-9]+)?@)?[-a-z0-9A-Z\-]+(\.[-a-z0-9A-Z\-]+)*((:[0-9]+)?)\//);
-	local domain = "" ; 
-
-        for (d in dd) {
-		domain = gsub(d,/\//,"") ;
-        }
-
-	return domain ; 
-} 
-
 event  Phish::process_smtp_urls(c:connection, url:string) 
 { 
+
+	log_reporter(fmt("EVENT: Phish::process_smtp_urls: sensitiveURIs VARS: url: %s", url),10); 
 
 #	if(/bro@|cp-mon-trace|ir-dev|security|ir-alerts|ir-reports/ in c$smtp$from)
 	
@@ -79,7 +68,7 @@ event  Phish::process_smtp_urls(c:connection, url:string)
 		return; 
 
 	local link = url ; 
-	local domain = get_domain_from_url(link); 
+	local domain = extract_host(link); 
 
 	if (ignore_file_types !in link && ignore_fp_links !in link )
 	  { 

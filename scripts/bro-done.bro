@@ -3,16 +3,35 @@ module Phish;
 
 export {	
 	global STATS_TIME: interval  =  10 mins ; 
+
+	 redef enum Notice::Type += {
+		WRITER_POSTGRESQL_CRASH, 
+	} ; 
+		
 } 
 
 event bro_done()
 {
-	#for (l in mail_links)
-	#	print fmt("%s", mail_links[l]); 
+	return ; 
+
+	for (a in AddressBook)
+		print fmt ("Addressbook: %s", a); 
+
+	for (l in smtp_from)
+		print fmt("%s", smtp_from[l]); 
+	
+	for (l in smtp_from_name)
+		print fmt("FROM_NAMEEEEEE: %s", smtp_from_name[l]); 
+	
+	for (l in smtp_from_email)
+		print fmt("FROM_EMAIL: %s", smtp_from_email[l]); 
 }	
 
 event bro_done()
 {
+
+	return ; 
+
 	print fmt("########### from_name #################"); 
         for (from_name in smtp_from_name)
                print fmt ("%s -> %s", from_name, smtp_from_name[from_name]);
@@ -35,7 +54,6 @@ event bro_done()
 
 event log_stats()
 {
-        print fmt("STATS: mail_links: %s", |mail_links|); 
         log_reporter(fmt("STATS: mail_links: %s, smtp_from: %s, smtp_from_name: %s, smtp_from_email: %s, http_fqdn: %s, email_recv_to_name: %s, email_recv_to_address: %s", |Phish::mail_links|, |Phish::smtp_from|, |Phish::smtp_from_name|, |Phish::smtp_from_email|, |Phish::http_fqdn|, |Phish::email_recv_to_name|, |Phish::email_recv_to_address|),0);
         schedule STATS_TIME { Phish::log_stats() };
 }
@@ -44,3 +62,15 @@ event bro_init()
 {
         schedule STATS_TIME { Phish::log_stats() };
 }
+
+
+event reporter_error(t: time , msg: string , location: string )
+{
+	print fmt ("EVENT: bro-done Reporter ERROR: %s, %s, %s", t, msg, location); 
+
+	if (/WRITER_POSTGRESQL/ in msg)
+	{
+		NOTICE([$note=Phish::WRITER_POSTGRESQL_CRASH, $msg=msg]); 
+	} 
+
+} 

@@ -1,13 +1,19 @@
 module Phish; 
 
 
+export {
+	global OPTIMIZATION: bool = T ; 
+} 
+
 ##### smtp_sensitive_uri.bro variables 
 
-	redef link_already_seen += { "*\.es\.net\/", "*\.jbei\.org\/"};
+	#redef link_already_seen += { "*\.es\.net\/", "*\.jbei\.org\/"};
 
-	redef suspicious_file_types += /\.xls$|\.rar$|\.exe$|\.zip$/ ; 
-	redef ignore_file_types += /\.gif$|\.png$|\.jpg$|\.xml$|\.PNG$|\.jpeg$|\.css$/ ; 
-	#redef ignore_file_types += /\.blah$/ ; 
+	redef suspicious_file_types += /\.xls$|\.pdf$|\.doc$|\.docx$|\.rar$|\.exe$|\.zip$/ ; 
+
+	#redef ignore_file_types += /\.gif$|\.png$|\.jpg$|\.xml$|\.PNG$|\.jpeg$|\.css$/ ; 
+	redef ignore_file_types += /blahblhablhalblh/ ; 
+
 	redef ignore_fp_links += /GALAKA\.com|support\.proofpoint\.com/ ; 
 
 	#redef ignore_mail_originators += { 128.3.64.0/24, 128.3.65.0/24} ; 
@@ -61,3 +67,5 @@ redef Phish::suspicious_text_in_url += /auth\.login\.php|authberkeleyedu/ ;
 #redef Phish::suspicious_text_in_url += /.*\.lbl\.gov\..*/ ;
 
 #redef Phish::suspicious_text_in_url += /lbla\.gov|lblb\.gov|lblc\.gov|lbld\.gov|lble\.gov|lblf\.gov|lblg\.gov|lblh\.gov|lbli\.gov|lblj\.gov|lblk\.gov|lbll\.gov|lblm\.gov|lbln\.gov|lblo\.gov|lblp\.gov|lblq\.gov|lblr\.gov|lbls\.gov|lblt\.gov|lblu\.gov|lblv\.gov|lblw\.gov|lblx\.gov|lbly\.gov|lblz\.gov|mbl\.gov|nbl\.gov|hbl\.gov|dbl\.gov|lcl\.gov|lfl\.gov|ljl\.gov|lrl\.gov|lbm\.gov|lbn\.gov|lbh\.gov|lbd\.gov|lb1\.gov|ibl\.gov|llbl\.gov|libl\.gov|ldl\.gov|lbi\.gov|1bl\.gov|l-bl\.gov|lb-l\.gov|lbvl\.gov|lbhl\.gov|lgbl\.gov|lvbl\.gov|lbgl\.gov|lhbl\.gov|lbnl\.gov|lnbl\.gov|bl\.gov|ll\.gov|lb\.gov|lbbl\.gov|lbp\.gov|obl\.gov|kbl\.gov|lgl\.gov|lhl\.gov|lnl\.gov|lvl\.gov|pbl\.gov|lbk\.gov|lbo\.gov|l\.bl\.gov|lb\.l\.gov|bll\.gov|llb\.gov|wwlbl\.gov|wwwlbl\.gov|www-lbl\.gov|lblgov|lbl-gov/ ; 
+
+
