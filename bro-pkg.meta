@@ -1,3 +1,5 @@
 [package]
 script_dir = scripts
 version = 0.0.1 
+desc=suite of smtp related policies includes extracting and logging URLs in emails and smtp anomaly detection to help flag phishing emails
+tags = smtp, phish, urls, emails
