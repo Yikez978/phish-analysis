@@ -18,7 +18,6 @@ export {
 
 function sql_write_smtp_from_name_db(fr: from_name_rec): bool 
 {
-
 	 Phish::log_reporter(fmt("EVENT: sql_write_smtp_from_name_db: VARS: from_email_rec: %s", fr),10);
 
 	if ( Cluster::local_node_type() == Cluster::MANAGER  || ! Cluster::is_enabled()) {
@@ -33,7 +32,7 @@ event bro_init()
         Log::create_stream(Phish::SMTP_FROM_NAME, [$columns=from_name_rec]);
         #Log::remove_filter(Phish::SMTP_FROM_NAME, "default");
 
-	local filter: Log::Filter = [$name="postgres_from_name_rec", $path="smtp_from_name", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro_test password=")];
+	local filter: Log::Filter = [$name="postgres_from_name_rec", $path="smtp_from_name", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")];
 	Log::add_filter(Phish::SMTP_FROM_NAME, filter);
 
 }
@@ -52,7 +51,7 @@ event bro_init()
 			$val=from_name_rec, 
 			$destination=smtp_from_name, 
 			$reader=Input::READER_POSTGRESQL,
-			$config=table(["conninfo"]="host=localhost dbname=bro_test password=")
+			$config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")
 		]);
 
 
@@ -78,7 +77,7 @@ event Phish::sql_read_smtp_from_name_db(from_name: string)
 			$fields=from_name_rec, 
 			$ev=read_smtp_from_name, 
                         $reader=Input::READER_POSTGRESQL,
-                        $config=table(["conninfo"]="host=localhost dbname=bro_test password=")
+                        $config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")
                 ]);
 	
         }
@@ -90,7 +89,7 @@ event Input::end_of_data(name: string, source:string)
 		{ 
 		Input::remove("smtp_from_name_table"); 
 		FINISHED_READING_SMTP_FROM_NAME = T ; 
-		log_reporter(fmt("FINISHED_READING_SMTP_FROM_NAME: %s", FINISHED_READING_SMTP_FROM_NAME),10);
+		log_reporter(fmt("FINISHED_READING_SMTP_FROM_NAME: %s", FINISHED_READING_SMTP_FROM_NAME),0);
 		 event check_db_read_status();
 		} 
         }

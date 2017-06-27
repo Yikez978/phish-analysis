@@ -35,7 +35,7 @@ event bro_init()
         Log::create_stream(Phish::SMTP_FROM, [$columns=from_rec]);
         #Log::remove_filter(Phish::SMTP_FROM, "default");
 
-	local filter: Log::Filter = [$name="postgres_from_rec", $path="smtp_from", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro_test password=")];
+	local filter: Log::Filter = [$name="postgres_from_rec", $path="smtp_from", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")];
         Log::add_filter(Phish::SMTP_FROM, filter);
 
 }
@@ -51,7 +51,7 @@ event bro_init()
 			$val=from_rec, 
 			$destination=smtp_from, 
 			$reader=Input::READER_POSTGRESQL,
-			$config=table(["conninfo"]="host=localhost dbname=bro_test password=")
+			$config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")
 		]);
 } 
 @endif 
@@ -68,7 +68,7 @@ event Input::end_of_data(name: string, source:string)
 		{ 
 		Input::remove("smtp_from_table"); 
 		FINISHED_READING_SMTP_FROM = T ; 
-		log_reporter(fmt("FINISHED_READING_SMTP_FROM: %s", FINISHED_READING_SMTP_FROM),10);
+		log_reporter(fmt("FINISHED_READING_SMTP_FROM: %s", FINISHED_READING_SMTP_FROM),0);
 		 event check_db_read_status();
 		} 
         }

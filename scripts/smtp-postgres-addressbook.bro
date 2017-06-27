@@ -18,10 +18,9 @@ export {
 
 function sql_write_addressbook_db(fr: addressbook_rec): bool 
 {
-	log_reporter(fmt("EVENT: function sql_write_addressbook_db: VARS fr: %s", fr),2);
+	Phish::log_reporter(fmt ("AddressBookDB: REC: SQL WRITING  sql_write_addressbook_db: %s", fr),0) ;
 
 	if ( Cluster::local_node_type() == Cluster::MANAGER  || ! Cluster::is_enabled()) {
-		Phish::log_reporter(fmt ("AddressBookDB: REC: SQL WRITING  sql_write_addressbook_db: %s", fr),10) ;
 		Log::write(Phish::AddressBookDB, fr); 
 		}
 	return T ; 
@@ -32,7 +31,7 @@ event bro_init()
 
         Log::create_stream(Phish::AddressBookDB, [$columns=addressbook_rec]);
         #Log::remove_filter(Phish::SMTP_FROM, "default");
-	local filter: Log::Filter = [$name="postgres_addressbook_rec", $path="addressbook", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro_test password=")];
+	local filter: Log::Filter = [$name="postgres_addressbook_rec", $path="addressbook", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")];
         Log::add_filter(Phish::AddressBookDB, filter);
 
 }
@@ -47,7 +46,7 @@ event bro_init()
 			$val=addressbook_rec, 
 			$destination=AddressBook, 
 			$reader=Input::READER_POSTGRESQL,
-			$config=table(["conninfo"]="host=localhost dbname=bro_test password=")
+			$config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")
 		]);
 
 } 

@@ -4,13 +4,15 @@ export {
 
 
 	#const SECS_ONE_DAY: interval  = 86400 secs; 
-	#const SECS_ONE_DAY: interval  = 3600 secs; 
-	const SECS_ONE_DAY: interval  = 1 secs; 
+	const SECS_ONE_DAY: interval  = 3600 secs; 
+	#const SECS_ONE_DAY: interval  = 1 secs; 
 
 	#const HTTP_NUM_DAYS_TO_WATCH: count  = 10 ; 
-	const HTTP_NUM_DAYS_TO_WATCH: count  = 3 ; 
+	const HTTP_NUM_DAYS_TO_WATCH: count  = 5 ; 
 
 	global EXPIRE_INTERVAL: interval = 1 days &redef ; 
+
+	global http_fqdn_tbuf: set[string] &create_expire=SECS_ONE_DAY; 
 
 	#type fqdn_rec : record { 
 	#	days_visited: vector of time  ; 
@@ -22,7 +24,7 @@ export {
 	#global http_fqdn: table[string] of fqdn_rec ; 
 
 	global m_w_http_fqdn_stop: event (host: string); 
-	global w_m_http_fqdn_new: event (host: string, fqdn: fqdn_rec) ; 
+	global w_m_http_fqdn_new: event (host: string, ts: time); 
 
 	#global uninteresting_fqdns : opaque of bloomfilter ;
 	
@@ -67,69 +69,61 @@ event Phish::m_w_http_fqdn_stop (host: string)
 
 
 @if (( Cluster::is_enabled() && Cluster::local_node_type() == Cluster::MANAGER ) || ! Cluster::is_enabled() )
-event Phish::w_m_http_fqdn_new(host: string, fqdn: fqdn_rec)
+event Phish::w_m_http_fqdn_new(host: string, ts: time) 
 {
-
-
-
 	local seen = bloomfilter_lookup(uninteresting_fqdns, host);
 	
 	if (seen > 0)	
 		return ; 
-	
 
 
 	if (host !in http_fqdn)
         {
-		### since we can also read all the trustworthy http domains in the beginning 	
-		# inside bro_init() we might not need to query DB everytime there is a new (non-bloomfitler)
-		# domain
-		# decision was do we read 100K domains in beginning or 100K over period of time 
-		# depending you can disable the sql_read_http_reputation_db event 
-
-		# -->  #event Phish::sql_read_http_reputation_db(host); 
-
                 local a: fqdn_rec;
                 a$days_visited = vector();
+
                 http_fqdn[host]= a ;
         }
 
-
-        http_fqdn[host]$domain = host ; 
-        http_fqdn[host]$num_requests += 1 ; #fqdn$num_requests ;
-        http_fqdn[host]$last_visited = fqdn$last_visited; 
+        http_fqdn[host]$domain = host ;
+        http_fqdn[host]$last_visited = ts ;
 
         local n = |http_fqdn[host]$days_visited|;
 
-	log_reporter(fmt("EVENT: Phish::w_m_http_fqdn_new: VARS: host: %s, fqdn: %s, n: %s, http_fqdn[host]: %s", host, fqdn, n, http_fqdn[host]),0); 
-        ### watch for 10 days
+        ####     watch for 10 days
         if (n < HTTP_NUM_DAYS_TO_WATCH)
         {
-                if (n == 0)
-		{ 
-                        http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = fqdn$last_visited ; 
-			event Phish::sql_write_http_reputation_db(http_fqdn[host]);
-		} 
+                if ( n == 0 )
+                {
+                        http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = ts ;
+                        log_reporter(fmt("N== 0 inside network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY: : http_fqdn: %s,%s", host, http_fqdn[host]),20);
+			if (ENABLE_DATA_BACKEND)
+				event Phish::sql_write_http_reputation_db(http_fqdn[host]);
+
+                }
                 else if (network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY  )
-		{ 
-                        http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = fqdn$last_visited ; 
-			event Phish::sql_write_http_reputation_db(http_fqdn[host]);
-		} 
+                {
+                        http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = ts ;
+                        log_reporter(fmt("N > 0: inside network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY: : http_fqdn: %s,%s", host, http_fqdn[host]),20);
+	
+			if (ENABLE_DATA_BACKEND)
+				event Phish::sql_write_http_reputation_db(http_fqdn[host]);
+                }
         }
 	else 
 	{
-        	http_fqdn[host]$trustworthy = T ; 
+       		http_fqdn[host]$trustworthy = T ; 
         	log_reporter(fmt("TrustworthyDomain: m_w_http_fqdn_stop and deleting: %s, %s", host, http_fqdn[host]),0);
-
+		
 		## prevent table from growing or keeping uninteresting fqdns 
 		bloomfilter_add(uninteresting_fqdns, host);  
 
-		event Phish::sql_write_http_reputation_db(http_fqdn[host]);
+		if (ENABLE_DATA_BACKEND)
+			event Phish::sql_write_http_reputation_db(http_fqdn[host]);
+
 		delete http_fqdn[host] ; 
 		event Phish::m_w_http_fqdn_stop(host);
 	} 
-
-
 }
 @endif
 
@@ -151,9 +145,7 @@ function get_fqdn(s: string): string
 
 
 event http_message_done(c: connection, is_orig: bool, stat: http_message_stat) &priority=-1
-#event HTTP::log_http(rec: HTTP::Info) &priority=-1 
 {
-
 	if (!is_orig)	
 		return ; 
 
@@ -166,7 +158,6 @@ event http_message_done(c: connection, is_orig: bool, stat: http_message_stat) &
 	local n = 0 ; 
 
 	host = rec?$host ? rec$host : cat(rec$id$resp_h) ; 
-
 	local seen = bloomfilter_lookup(uninteresting_fqdns, host);
 
         if (seen > 0 &&  host in http_fqdn)
@@ -174,40 +165,11 @@ event http_message_done(c: connection, is_orig: bool, stat: http_message_stat) &
 	else if (seen > 0 ) 
 		return ; 
 
-	if (host !in http_fqdn)
-	{
-		local a: fqdn_rec; 
-		a$days_visited = vector(); 
-
-		http_fqdn[host]= a ; 
-		#http_fqdn[host]$days_visited[n] = rec$ts ;
-		event Phish::w_m_http_fqdn_new(host, http_fqdn[host]);
-	} 
-	
-	n = |http_fqdn[host]$days_visited|; 
-	#http_fqdn[host]$num_requests += 1 ; 
-	http_fqdn[host]$last_visited = rec$ts ; 
-
-	####	 watch for 10 days 
-	if (n < HTTP_NUM_DAYS_TO_WATCH) 
+	if (host !in http_fqdn_tbuf) 
 	{ 
-		if ( n > 1)
-		{ 
-			if (network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY  )
-			{
-				http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = rec$ts ;
-				#log_reporter(fmt("inside network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY: : http_fqdn: %s,%s", host, http_fqdn[host]),0);
-				event Phish::w_m_http_fqdn_new(host, http_fqdn[host]);
-			}
-		} 
+		add http_fqdn_tbuf[host];
+		event Phish::w_m_http_fqdn_new(host, rec$ts);
 	} 
-	else 
-	{ 
-		http_fqdn[host]$trustworthy = T ; 
-		bloomfilter_add(uninteresting_fqdns, host);
-		event Phish::w_m_http_fqdn_new(host, http_fqdn[host]);
-	} 
-
 } 
 
 event http_stats (c: connection, stats: http_stats_rec)

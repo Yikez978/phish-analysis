@@ -4,6 +4,8 @@ export {
 
         global log_stats: event();
 
+	global ENABLE_DATA_BACKEND=T; 
+
         global log_reporter: function (msg: string, debug: count);
 	global Phish::check_db_read_status: event(); 
 
@@ -36,15 +38,11 @@ function build_url_http(rec: HTTP::Info): string
 
 function  log_reporter(msg: string, debug: count)
 {
-
-
         #if (debug > 0 ) {
                 #event reporter_info(network_time(), msg, peer_description);
         #}
 
-        local DEBUG = 0 ;
-
-if (debug <= 5) {
+	if (debug <= 5) {
                 @if ( ! Cluster::is_enabled())
                         print fmt("%s", msg);
                 @endif
@@ -228,7 +226,7 @@ export {
 	global mail_links_expire_func: function(t: table[string] of mi, link: string): interval ;
 
        	#global mail_links: table [string] of mi &create_expire=EXPIRE_INTERVAL &expire_func=mail_links_expire_func  ;
-       	global mail_links: table [string] of mi &create_expire=0 secs  &expire_func=mail_links_expire_func  ;
+       	global mail_links: table [string] of mi &create_expire=12 hrs &expire_func=mail_links_expire_func  ;
 	
 	# bloom filter to store expire URLs 
  	global mail_links_bloom: opaque of bloomfilter ;
@@ -328,7 +326,7 @@ function find_all_urls_without_scheme(s: string): string_set
 function get_email_address(sender: string): string
 {
 
-        log_reporter(fmt("EVENT: function get_email_address: VARS: sender: %s", sender),10);
+        #log_reporter(fmt("EVENT: function get_email_address: VARS: sender: %s", sender),10);
 
         #email regexp: [A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}
         local pat = />|<| |\"|\'|\}|\{|\(.*\)/;
@@ -352,14 +350,21 @@ function get_email_address(sender: string): string
 
 function get_email_name(sender: string): string
 {
-        log_reporter(fmt("EVENT: function get_email_name: VARS: sender: %s", sender),10);
+        #log_reporter(fmt("EVENT: function get_email_name: VARS: sender: %s", sender),10);
 
         if (/</ !in sender)
-                return "" ;
+                return get_email_address(sender);
 
         local pat = /\"|\'|\{|\}/;
 
         local s=strip(gsub(sender, pat, ""));
 
-        return escape_string(strip(split_string(s,/</)[0]));
+        local result=strip(split_string(s,/ </)[0]);
+
+	#### if there is no name, we use email address as name 
+	### else a blank name causes confusion in analysis 
+	if (result == "")  
+		return get_email_address(sender); 
+
+	return escape_string(result) ; 
 }

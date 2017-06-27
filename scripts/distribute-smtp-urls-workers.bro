@@ -43,7 +43,10 @@ event Phish::w_m_url_click_in_bloom(link: string, c: connection)
 		if (link !in tmp_link_cache)
 			tmp_link_cache[link] = c ; 
 
+	@ifdef (Phish::sql_read_mail_links_db) 
 		event Phish::sql_read_mail_links_db(link);
+	@endif 
+
 	}
 @endif 
 
@@ -68,7 +71,7 @@ function mail_links_expire_func(t: table[string] of mi, link: string): interval
 	
 	if  ( seen > 0 ) 
 		{ 
-			log_reporter(fmt("mail_links_expire_func: bloomed link : %s, %s",link, t[link]),10); 
+			log_reporter(fmt("mail_links_expire_func: bloomed link : %s, %s",link, t[link]),0); 
 			return 0 secs ; 
 		} 
 
@@ -80,7 +83,7 @@ function mail_links_expire_func(t: table[string] of mi, link: string): interval
 
 	if ( seen > 0) 
 	{ 
-		log_reporter(fmt("mail_links_expire_func: uninteresting_fqdns : %s, %s",link, t[link]),10); 
+		log_reporter(fmt("mail_links_expire_func: uninteresting_fqdns : %s, %s",link, t[link]),0); 
 		#return 0 secs ; 
 	} 
 
@@ -88,12 +91,13 @@ function mail_links_expire_func(t: table[string] of mi, link: string): interval
 	### no need to store https URLs either since we'd never see their clicks in HTTP 
 	if ( /^https:\/\// in link)
 	{
-		log_reporter(fmt("mail_links_expire_func: https: %s, %s",link, t[link]),10); 
+		log_reporter(fmt("mail_links_expire_func: https: %s, %s",link, t[link]),0); 
 		return 0 secs ; 
 	}  
 
 	### time to write to the database now 	
 
+	@ifdef (Phish::sql_write_mail_links_db)
 	if (Phish::sql_write_mail_links_db(link, t[link]) ) 
 	{ 
 		bloomfilter_add(mail_links_bloom, link); 
@@ -105,6 +109,8 @@ function mail_links_expire_func(t: table[string] of mi, link: string): interval
 		log_reporter(fmt("Failure in writing to DATABASE so keeping in the mail_links table itself : link: %s, t[link]:%s", link,t[link]),0); 
 		return EXTEND_LINK_EXPIRE ; 
 	} 
+	@endif 
+	
 
 	return EXTEND_LINK_EXPIRE ;
 

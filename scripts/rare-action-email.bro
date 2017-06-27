@@ -207,12 +207,16 @@ function add_to_from(rec: smtp_rec)
                 if (n == 0 )
 		{
                 	smtp_from[from]$days_sent[|smtp_from[from]$days_sent|] = rec$ts ;
-			sql_write_smtp_from_db(smtp_from[from]); 
+
+			if (ENABLE_DATA_BACKEND) 
+				sql_write_smtp_from_db(smtp_from[from]); 
 		}
                 else if ( network_time() - smtp_from[from]$days_sent[n-1] > SECS_ONE_DAY)
 		{
                         smtp_from[from]$days_sent[|smtp_from[from]$days_sent|] = rec$ts ;
-			sql_write_smtp_from_db(smtp_from[from]); 
+
+			if (ENABLE_DATA_BACKEND) 
+				sql_write_smtp_from_db(smtp_from[from]); 
 		} 
         }
 	else 
@@ -220,7 +224,10 @@ function add_to_from(rec: smtp_rec)
 		smtp_from[from]$trustworthy =  T ; 
 		log_reporter(fmt("TrustworthyFrom: %s, %s", from, smtp_from[from]),0);
 		bloomfilter_add(uninteresting_smtp_from, from);
-		sql_write_smtp_from_db(smtp_from[from]);
+
+		if (ENABLE_DATA_BACKEND) 
+			sql_write_smtp_from_db(smtp_from[from]);
+
 	} 
 
 } 
@@ -273,19 +280,25 @@ function add_to_from_name(rec: smtp_rec)
 		if (n == 0 )
 		{
 			smtp_from_name[from_name]$days_sent[|smtp_from_name[from_name]$days_sent|] = rec$ts ; 
-			sql_write_smtp_from_name_db(smtp_from_name[from_name]); 
+
+			if (ENABLE_DATA_BACKEND) 
+				sql_write_smtp_from_name_db(smtp_from_name[from_name]); 
 		} 
 		else if ( network_time() - smtp_from_name[from_name]$days_sent[n-1] > SECS_ONE_DAY)
 		{
 			smtp_from_name[from_name]$days_sent[|smtp_from_name[from_name]$days_sent|] = rec$ts ;
-			sql_write_smtp_from_name_db(smtp_from_name[from_name]); 
+			if (ENABLE_DATA_BACKEND) 
+				sql_write_smtp_from_name_db(smtp_from_name[from_name]); 
 		} 
 	} 
 	else 
 	{ 
 		smtp_from_name[from_name]$trustworthy =  T ; 
 		#log_reporter(fmt("TrustworthyFromName: %s, %s", from_name, smtp_from_name[from_name]),0);
-		sql_write_smtp_from_name_db(smtp_from_name[from_name]); 
+
+		if (ENABLE_DATA_BACKEND) 
+			sql_write_smtp_from_name_db(smtp_from_name[from_name]); 
+
 		bloomfilter_add(uninteresting_smtp_from_name, from_name);
 	} 
 }
@@ -341,12 +354,16 @@ function add_to_from_email(rec: smtp_rec)
 		if (n == 0 )
 		{
 			smtp_from_email[from_email]$days_sent[|smtp_from_email[from_email]$days_sent|] = rec$ts ; 
-			sql_write_smtp_from_email_db(smtp_from_email[from_email]); 
+
+			if (ENABLE_DATA_BACKEND)
+				sql_write_smtp_from_email_db(smtp_from_email[from_email]); 
 		} 
 		else if ( network_time() - smtp_from_email[from_email]$days_sent[n-1] > SECS_ONE_DAY)
 		{
 			smtp_from_email[from_email]$days_sent[|smtp_from_email[from_email]$days_sent|] = rec$ts ;
-			sql_write_smtp_from_email_db(smtp_from_email[from_email]); 
+
+			if (ENABLE_DATA_BACKEND) 
+				sql_write_smtp_from_email_db(smtp_from_email[from_email]); 
 		} 
 	}
 	else 
@@ -354,7 +371,9 @@ function add_to_from_email(rec: smtp_rec)
 		bloomfilter_add(uninteresting_smtp_from_email, from_email);
 		smtp_from_email[from_email]$trustworthy =  T ; 
 		log_reporter(fmt("TrustworthyFromEmail: %s, %s", from_email, smtp_from_email[from_email]),0);
-		sql_write_smtp_from_email_db(smtp_from_email[from_email]); 
+
+		if (ENABLE_DATA_BACKEND) 
+			sql_write_smtp_from_email_db(smtp_from_email[from_email]); 
 
 	} 
 }

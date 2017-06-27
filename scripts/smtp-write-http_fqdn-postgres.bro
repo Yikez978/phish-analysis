@@ -33,11 +33,9 @@ event sql_write_http_reputation_db(hf: fqdn_rec)
 	#  to avoid untold pain and suffering...
 	#
 
-	log_reporter(fmt("EVENT: sql_write_http_reputation_db: hf: %s", hf),10); 
-
+	log_reporter(fmt("EVENT: sql_write_http_reputation_db: hf: %s", hf),20); 
 
 	if ( Cluster::local_node_type() == Cluster::MANAGER  || ! Cluster::is_enabled()) {
-		Phish::log_reporter(fmt ("SQL sql_write_http_reputation_db: WRITE %s", hf),10) ;
 		Log::write(Phish::HTTP_REPUTE, hf); 
 		}
 	}
@@ -52,7 +50,7 @@ event bro_init()
         Log::remove_filter(Phish::HTTP_REPUTE, "default");
         Log::create_stream(Phish::HTTP_REPUTE, [$columns=fqdn_rec]);
 	
-	local filter: Log::Filter = [$name="postgres", $path="http_fqdn", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro_test password=")];
+	local filter: Log::Filter = [$name="postgres", $path="http_fqdn", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")];
         Log::add_filter(Phish::HTTP_REPUTE, filter);
 
 }

@@ -11,9 +11,14 @@ export {
 
 # since we have the smtp URL could be a good check to see if its reputation
 # if host is not already in http_fqdn 
+### we disable 'on-demand' updates to http_fqdn this since at the very begining (bro_init)
+### we are already reading the entire DB 
+### individual reading from each worker causes a lot more load then a big query in the begining.
 
 event Phish::process_smtp_urls(c: connection, url: string)
 {
+
+	return ; 
 
 	log_reporter(fmt("EVENT: Phish::process_smtp_urls: url: %s", url),10);
 
@@ -32,7 +37,7 @@ event Phish::sql_read_http_reputation_db(host: string)
 
 	if (host !in tmpset)
         	{
-		log_reporter(fmt("SQL READ: sql_read_http_reputation_db: %s", host),10); 
+		log_reporter(fmt("SQL READ: sql_read_http_reputation_db: %s", host),0); 
                 add tmpset[host];
 
                 Input::add_event( [
@@ -42,7 +47,7 @@ event Phish::sql_read_http_reputation_db(host: string)
                         $ev=Phish::sqlite_http_repute_db_line,
                         $want_record=T,
                         $reader=Input::READER_POSTGRESQL, 
-			$config=table(["conninfo"]="host=localhost dbname=bro_test password=")
+			$config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")
                 ]);
         	}
 	} 
@@ -62,7 +67,7 @@ event Phish::sqlite_http_repute_db_line(description: Input::EventDescription, tp
 
 event Input::end_of_data(name: string, source:string)
 	{
-		log_reporter(fmt("END_OF_DATA: name:%s, source: %s", name, source),10); 
+		log_reporter(fmt("END_OF_DATA: name:%s, source: %s", name, source),0); 
 		#local query = fmt ("select * from http_fqdn where domain='%s' order by last_visited desc limit 1 ;", name); 
 		#if (/http_fqdn/ in source && query == source)
 
@@ -70,7 +75,7 @@ event Input::end_of_data(name: string, source:string)
 		{ 
 			Input::remove(name);
 			FINISHED_READING_HTTP_FQDN = T ; 
-			### log_reporter(fmt("FINISHED_READING_HTTP_FQDN: %s", FINISHED_READING_HTTP_FQDN),10);
+			### log_reporter(fmt("FINISHED_READING_HTTP_FQDN: %s", FINISHED_READING_HTTP_FQDN),0);
 			event check_db_read_status(); 
 		} 
 
@@ -90,7 +95,6 @@ event Input::end_of_data(name: string, source:string)
 ### At the bro startup - we want to read the reputation_db 
 ### and populate uninteresting_fqdns 
 
-
 event bro_init()
 	{
                Input::add_table(
@@ -102,7 +106,7 @@ event bro_init()
                    $want_record=T,
 		   $destination=http_fqdn, 
                    $reader=Input::READER_POSTGRESQL,
-                   $config=table(["conninfo"]="host=localhost dbname=bro_test password=")
+                   $config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")
                    ]);	
 	}
 

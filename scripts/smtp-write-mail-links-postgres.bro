@@ -76,7 +76,7 @@ event bro_init()
 	#Log::add_filter(Phish::MAIL_LINKS, f);
 
 
-	local filter: Log::Filter = [$name="postgres_b", $path="mail_links", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro_test password=")];
+	local filter: Log::Filter = [$name="postgres_b", $path="mail_links", $writer=Log::WRITER_POSTGRESQL, $config=table(["conninfo"]="host=localhost dbname=bro user=bro password=")];
         Log::add_filter(Phish::MAIL_LINKS, filter);
 
 	local m: Phish::mi; 
