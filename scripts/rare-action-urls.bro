@@ -97,8 +97,6 @@ event Phish::w_m_http_fqdn_new(host: string, ts: time)
                 {
                         http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = ts ;
                         log_reporter(fmt("N== 0 inside network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY: : http_fqdn: %s,%s", host, http_fqdn[host]),20);
-		if (ENABLE_DATA_BACKEND)
-				event Phish::sql_write_http_reputation_db(http_fqdn[host]);
 
                 }
                 else if (network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY  )
@@ -106,8 +104,6 @@ event Phish::w_m_http_fqdn_new(host: string, ts: time)
                         http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = ts ;
                         log_reporter(fmt("N > 0: inside network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY: : http_fqdn: %s,%s", host, http_fqdn[host]),20);
 	
-			if (ENABLE_DATA_BACKEND)
-				event Phish::sql_write_http_reputation_db(http_fqdn[host]);
                 }
         }
 	else 
@@ -118,8 +114,6 @@ event Phish::w_m_http_fqdn_new(host: string, ts: time)
 		## prevent table from growing or keeping uninteresting fqdns 
 		bloomfilter_add(uninteresting_fqdns, host);  
 
-		if (ENABLE_DATA_BACKEND)
-			event Phish::sql_write_http_reputation_db(http_fqdn[host]);
 
 		delete http_fqdn[host] ; 
 		event Phish::m_w_http_fqdn_stop(host);
