@@ -97,7 +97,7 @@ event Phish::w_m_http_fqdn_new(host: string, ts: time)
                 {
                         http_fqdn[host]$days_visited[|http_fqdn[host]$days_visited|] = ts ;
                         log_reporter(fmt("N== 0 inside network_time() - http_fqdn[host]$days_visited[n-1] > SECS_ONE_DAY: : http_fqdn: %s,%s", host, http_fqdn[host]),20);
-			if (ENABLE_DATA_BACKEND)
+		if (ENABLE_DATA_BACKEND)
 				event Phish::sql_write_http_reputation_db(http_fqdn[host]);
 
                 }

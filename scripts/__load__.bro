@@ -9,15 +9,15 @@ redef table_incremental_step=20000 ;
 ################################################################
 #### uncomment only if you've got postgres backend installed 
 
-#@load ./smtp-write-http_fqdn-postgres.bro
-#@load ./smtp-read-http_fqdn-postgres.bro
+@load ./smtp-write-http_fqdn-postgres.bro
+@load ./smtp-read-http_fqdn-postgres.bro
 
-#@load ./smtp-write-mail-links-postgres.bro 
-#@load ./smtp-read-mail-links-postgres.bro
+@load ./smtp-write-mail-links-postgres.bro 
+@load ./smtp-read-mail-links-postgres.bro
 
-#@load ./smtp-postgres-smtp_from.bro 
-#@load ./smtp-postgres-smtp_from_name.bro 
-#@load ./smtp-postgres-smtp_from_email.bro 
+@load ./smtp-postgres-smtp_from.bro 
+@load ./smtp-postgres-smtp_from_name.bro 
+@load ./smtp-postgres-smtp_from_email.bro 
 ################################################################
 
 @load ./log-smtp-urls.bro 
