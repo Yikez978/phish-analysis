@@ -6,6 +6,17 @@ redef table_incremental_step=20000 ;
 
 @load ./base-vars.bro 
 
+@load ./smtp-write-http_fqdn-postgres.bro
+@load ./smtp-read-http_fqdn-postgres.bro
+
+@load ./smtp-write-mail-links-postgres.bro 
+@load ./smtp-read-mail-links-postgres.bro
+
+
+@load ./smtp-postgres-smtp_from.bro 
+@load ./smtp-postgres-smtp_from_name.bro 
+@load ./smtp-postgres-smtp_from_email.bro 
+
 @load ./log-smtp-urls.bro 
 @load ./log-clicked-urls.bro
 
@@ -23,7 +34,20 @@ redef table_incremental_step=20000 ;
 @load ./http-sensitive_POSTs.bro
 @load ./smtp-file-download.bro
 
+@load ./smtp-postgres-addressbook.bro
+@load ./smtp-addressbook.bro 
+
 @load ./configure-variables-in-this-file.bro    
 @load ./bro-done.bro 
 @load ./smtp-analysis-notice-policy.bro
 
+
+event bro_init()
+{ 
+
+@ifdef ( Log::WRITER_POSTGRESQL )
+	ENABLE_DATA_BACKEND= T ;
+@else
+	ENABLE_DATA_BACKEND = F ;
+@endif 
+}

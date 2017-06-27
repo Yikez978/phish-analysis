@@ -4,7 +4,7 @@ export {
 
         global log_stats: event();
 
-	global ENABLE_DATA_BACKEND=F; 
+	global ENABLE_DATA_BACKEND=T; 
 
         global log_reporter: function (msg: string, debug: count);
 	global Phish::check_db_read_status: event(); 
